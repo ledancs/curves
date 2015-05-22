@@ -14,8 +14,6 @@
             margin-right: auto;
             display: inline-block;
             padding: 0;
-            width: 100%;
-            height: 100%;
         }
         div.curves-container {
             margin: 0;
@@ -32,8 +30,11 @@
 
 <script src="curves.js" type="application/javascript"></script>
 <script type="text/javascript">
-
+    var w = 600,
+            h = 50;
+    var className = "curves-container";
     // create an instance of the curves
+    var c = new Curves(w, h, groups, className);
 
 </script>
 
