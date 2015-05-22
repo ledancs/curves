@@ -76,8 +76,9 @@ function Curves(w, h, groupedMeasurements, className){
                 return d.value > m.max || d.value < m.min ? "tomato": "limegreen";
             })
             .attr({
-                "stroke": 1,
-                "r": 5
+                "stroke": "grey",
+                "stroke-width": 1,
+                "r": 4
             });
         y += h + 60;
     }
