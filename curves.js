@@ -327,5 +327,5 @@ function Curves(w, h, groupedMeasurements, className){
     var translate = "translate(" + 5 + ", " + 5 + ")";
     container.attr("transform", translate);
 
-    // svg.attr("height", y + 5);
+    svg.attr("height", y + 5);
 }
