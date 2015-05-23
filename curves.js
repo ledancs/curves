@@ -120,11 +120,14 @@ function Curves(w, h, groupedMeasurements, className){
         return points;
     }
 
+
+    /**
+     * Takes care of the dragging behavior.
+     */
     var dx = 0;
     var drag = d3.behavior.drag()
         .on("drag", function(d, i) {
             dx += d3.event.dx; // add the movement in x
-            console.log(d3.event.dx);
             // negative means we move it to the future
             // positive we mov it to the past
 
@@ -143,13 +146,17 @@ function Curves(w, h, groupedMeasurements, className){
                 })
         });
 
+    /**
+     * Begin the factory!
+     */
+
     var div = d3.select("body")
         .append("div")
         .attr("class", className);
 
     var svg = div.append("svg")
-        .attr("width", w + 2)
-        .attr("height", h + 10); // some margin
+        .attr("width", "50%")
+        .attr("height", "100%"); // some margin
 
     var y = 30;
     var offset = 60;
@@ -163,7 +170,7 @@ function Curves(w, h, groupedMeasurements, className){
         timestamp2: timeMin + (31 * 24 * 60 * 60), // a month window
         x1: 0, // to be updated with the timeScale
         x2: 0
-    }
+    };
 
     // time scale for the given window
     var timeScale = d3.scale.linear()
@@ -174,11 +181,11 @@ function Curves(w, h, groupedMeasurements, className){
     var limitX = timeScale(timeMax + (24 * 60 * 60));
     var container = svg.append("g").attr("class", "container");
 
-    var m, valueScale, g, draggable;
-    for(var i = 0; i < hMeasurements.length; i ++){
+    var m, valueScale, g, draggable, clip;
+    for(var index = 0; index < hMeasurements.length; index ++){
 
         // extract the measurement
-        m = hMeasurements[i];
+        m = hMeasurements[index];
 
         // the value scale for this curve
         valueScale = d3.scale.linear()
@@ -211,6 +218,17 @@ function Curves(w, h, groupedMeasurements, className){
                 "opacity": 0.15,
                 "class": "wellness-zone"
             });
+
+        // Clip
+        clip = svg.append("clipPath")
+            .attr("id", "clip-" + index)
+            .append("rect")
+            .attr('x', 0)
+            .attr('y', y - offset/2)
+            .attr('width', w)
+            .attr("height", h + frameHeight);
+
+        g.attr("clip-path", function(d,i) { return "url(#clip-" + index + ")"; });
 
         // draggable group
         draggable = g.append("g")
@@ -283,7 +301,9 @@ function Curves(w, h, groupedMeasurements, className){
              })
             .attr("width", function(d){
                  return timeScale(timeMax + (24 * 60 * 60));
-             })
+             });
+
+
 
         // Frame
         g.append("rect")
@@ -297,15 +317,15 @@ function Curves(w, h, groupedMeasurements, className){
                 "stroke-width": 1.25,
                 "vector-effect": "non-scaling-stroke",
                 "class": "frame"
-            });
+            })
         // update the offset
         y += h + offset;
     }
 
 
 
-    var translate = "translate(" + 1 + ", " + 5 + ")";
+    var translate = "translate(" + 5 + ", " + 5 + ")";
     container.attr("transform", translate);
 
-    svg.attr("height", y + 5);
+    // svg.attr("height", y + 5);
 }
