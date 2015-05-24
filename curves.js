@@ -155,19 +155,21 @@ function Curves(w, h, groupedMeasurements, className){
         .attr("class", className);
 
     var svg = div.append("svg")
-        .attr("width", "50%")
-        .attr("height", "100%"); // some margin
+        .attr("width", w + 5)
+        .attr("height", h); // some margin
 
-    var y = 30;
-    var offset = 60;
-    var frameHeight = 50;
+
+
+    var frameHeight = h * 2;
+    var offset = frameHeight + 5;
+    var y = h;
     var hMeasurements = getMeasurements(groupedMeasurements);
     var minMax = getMinMax(hMeasurements);
     var timeMin = minMax.min;
     var timeMax = minMax.max;
     var window = {
-        timestamp1: timeMin - (24 * 60 * 60),
-        timestamp2: timeMin + (31 * 24 * 60 * 60), // a month window
+        timestamp1: timeMin - (32 * 24 * 60 * 60),
+        timestamp2: timeMin + (32 * 24 * 60 * 60), // a month window
         x1: 0, // to be updated with the timeScale
         x2: 0
     };
@@ -178,10 +180,42 @@ function Curves(w, h, groupedMeasurements, className){
         .range([0, w]);
     window.x1 = timeScale(window.timestamp1);
     window.x2 = timeScale(window.timestamp2);
-    var limitX = timeScale(timeMax + (24 * 60 * 60));
-    var container = svg.append("g").attr("class", "container");
+    var limitX = timeScale(timeMax + (30 * 24 * 60 * 60));
 
-    var m, valueScale, g, draggable, clip;
+    /**
+     * Create the Date objects for each month in between the measurements
+     */
+    var date = new Date(window.timestamp1 * 1000);
+    var month = date.getUTCMonth();
+    var year = date.getUTCFullYear();
+
+    var tsMonth = new Date(year, month, 0, 0, 0, 0, 0);
+    var tsMonthSeconds = tsMonth.getTime() / 1000;
+    var tsMonths = [];
+
+    var monthsYear = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // check the year
+    while(tsMonthSeconds < window.timestamp2){
+        month++;
+        if(month > 11){
+            month = 0;
+            year++;
+        }
+        tsMonth = new Date(year, month, 0, 0, 0, 0, 0);
+        tsMonthSeconds = tsMonth.getTime() / 1000;
+        tsMonths.push({
+            ts: tsMonthSeconds,
+            month: monthsYear[month],
+            year: year
+        });
+    }
+
+    /**
+     * Start the container building
+     */
+    var container = svg.append("g").attr("class", "container");
+    var m, valueScale, g, draggable, clip, labels;
     for(var index = 0; index < hMeasurements.length; index ++){
 
         // extract the measurement
@@ -199,12 +233,15 @@ function Curves(w, h, groupedMeasurements, className){
         // label text
         g.append("text")
             .attr({
-                "x": 2,
-                "y": y - offset/4,
+                "x": 5,
+                "y": y - offset/2,
                 "font-size": 14,
                 "fill": "grey"
             })
-            .text(m.label);
+            .text(m.label)
+            .attr("transform", function (d) {
+                return "translate( 0 , " + (this.getBBox().height) + ")";
+            });
 
         // wellness zone
         g.append("rect")
@@ -238,7 +275,55 @@ function Curves(w, h, groupedMeasurements, className){
             }])
             .call(drag);
 
-        // lines
+        // labels
+        labels = draggable.append("g")
+            .attr("class", "labels");
+
+        labels.selectAll("line")
+            .data(tsMonths)
+            .enter()
+            .append("line")
+            .attr("x1", function(d){
+                return timeScale(d.ts);
+            })
+            .attr("x2", function (d) {
+                return timeScale(d.ts);
+            })
+            .attr("y1", function (d) {
+                return y - h;
+            })
+            .attr("y2", function (d) {
+                return y + h * 1.4;
+            })
+            .attr({
+                "stroke-width": 1,
+                "stroke": "grey",
+                "vector-effect": "non-scaling-stroke"
+            });
+
+        labels.selectAll("text")
+            .data(tsMonths)
+            .enter()
+            .append("text")
+            .attr("x", function (d) {
+                return timeScale(d.ts);
+            })
+            .attr({
+                "y": y + h * 1.4,
+                "font-size": 12,
+                "fill": "grey"
+            })
+            .text(function (d) {
+                return d.month + " " + d.year;
+            })
+            .attr("transform", function (d) {
+
+                return "translate(" + (-this.getBBox().width/2) + ", " + (this.getBBox().height) + ")";
+            });
+
+        labels.attr("opacity", 0.75);
+
+        // lines for the curves connecting the dots
         draggable.append("g")
             .attr("class", "lines")
             .selectAll("line")
@@ -300,7 +385,7 @@ function Curves(w, h, groupedMeasurements, className){
                  "class": "mask"
              })
             .attr("width", function(d){
-                 return timeScale(timeMax + (24 * 60 * 60));
+                 return limitX;
              });
 
 
@@ -317,7 +402,7 @@ function Curves(w, h, groupedMeasurements, className){
                 "stroke-width": 1.25,
                 "vector-effect": "non-scaling-stroke",
                 "class": "frame"
-            })
+            });
         // update the offset
         y += h + offset;
     }
