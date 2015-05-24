@@ -235,7 +235,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "x": 5,
                 "y": y - offset/2,
-                "font-size": h * 0.5,
+                "font-size": h * 0.45,
                 "fill": "grey"
             })
             .text(m.label)
@@ -272,8 +272,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr("class", "draggable")
             .data([{
                 "x": 0
-            }])
-            .call(drag);
+            }]);
 
         // labels
         labels = draggable.append("g")
@@ -343,9 +342,9 @@ function Curves(w, h, groupedMeasurements, className){
                 return y + h/2 + h/4 - valueScale(d.value2);
             })
             .attr({
-                // "vector-effect": "non-scaling-stroke",
-                "stroke-width": 1.75,
-                "stroke": "grey"
+                "vector-effect": "non-scaling-stroke",
+                "stroke-width": 1,
+                "stroke": "black"
             });
 
         // circles
@@ -366,8 +365,8 @@ function Curves(w, h, groupedMeasurements, className){
                 return getColor(m, d.value);
             })
             .attr({
-                // "vector-effect": "non-scaling-stroke",
-                "stroke-width": 2,
+                "vector-effect": "non-scaling-stroke",
+                "stroke-width": 1,
                 "r": 5,
                 "stroke": "grey"
             });
@@ -410,7 +409,8 @@ function Curves(w, h, groupedMeasurements, className){
 
 
     var translate = "translate(" + 5 + ", " + 5 + ")";
-    container.attr("transform", translate);
+    container.attr("transform", translate)
+        .call(drag);
 
     svg.attr("height", y + 5);
 }
