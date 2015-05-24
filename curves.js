@@ -196,7 +196,7 @@ function Curves(w, h, groupedMeasurements, className){
     var monthsYear = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // check the year
-    while(tsMonthSeconds < window.timestamp2){
+    while(tsMonthSeconds < timeMax){
         month++;
         if(month > 11){
             month = 0;
@@ -235,7 +235,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "x": 5,
                 "y": y - offset/2,
-                "font-size": 14,
+                "font-size": h * 0.5,
                 "fill": "grey"
             })
             .text(m.label)
@@ -296,7 +296,7 @@ function Curves(w, h, groupedMeasurements, className){
                 return y + h * 1.4;
             })
             .attr({
-                "stroke-width": 1,
+                "stroke-width": 0.75,
                 "stroke": "grey",
                 "vector-effect": "non-scaling-stroke"
             });
@@ -310,7 +310,7 @@ function Curves(w, h, groupedMeasurements, className){
             })
             .attr({
                 "y": y + h * 1.4,
-                "font-size": 12,
+                "font-size": h * 0.4,
                 "fill": "grey"
             })
             .text(function (d) {
@@ -343,9 +343,9 @@ function Curves(w, h, groupedMeasurements, className){
                 return y + h/2 + h/4 - valueScale(d.value2);
             })
             .attr({
-                "stroke-width": 1,
-                "stroke": "grey",
-                "vector-effect": "non-scaling-stroke"
+                // "vector-effect": "non-scaling-stroke",
+                "stroke-width": 1.75,
+                "stroke": "grey"
             });
 
         // circles
@@ -366,10 +366,10 @@ function Curves(w, h, groupedMeasurements, className){
                 return getColor(m, d.value);
             })
             .attr({
+                // "vector-effect": "non-scaling-stroke",
                 "stroke-width": 2,
-                "r": 4,
-                "stroke": "grey",
-                "vector-effect": "non-scaling-stroke"
+                "r": 5,
+                "stroke": "grey"
             });
 
 

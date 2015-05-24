@@ -8,6 +8,13 @@
     <style type="text/css">
         body {
             font-family: sans-serif;
+
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         svg {
             display: inline-block;
@@ -26,7 +33,7 @@
 <script src="curves.js" type="application/javascript"></script>
 <script type="text/javascript">
     var w = 500,
-            h = 30;
+            h = 35;
     var className = "curves-container";
     // create an instance of the curves
     var c = new Curves(w, h, groups, className);
