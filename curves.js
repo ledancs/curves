@@ -173,7 +173,7 @@ function Curves(w, h, groupedMeasurements, className){
         x1: 0, // to be updated with the timeScale
         x2: 0
     };
-
+    var circleMeasurementRadius = 6;
     // time scale for the given window
     var timeScale = d3.scale.linear()
         .domain([window.timestamp1, window.timestamp2])
@@ -212,14 +212,33 @@ function Curves(w, h, groupedMeasurements, className){
     }
 
     /**
+     * Tooltip
+     */
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-5, 0])
+        .html(function(d) {
+            return d.tooltipText;
+        });
+
+    svg.call(tip);
+
+
+    /**
      * Start the container building
      */
     var container = svg.append("g").attr("class", "container");
-    var m, valueScale, g, draggable, clip, labels;
+    var m, valueScale, g, draggable, clip, labels, samplesData;
     for(var index = 0; index < hMeasurements.length; index ++){
 
         // extract the measurement
         m = hMeasurements[index];
+
+        // create samples data model
+        samplesData = m.samples;
+        samplesData.forEach(function (d) {
+            d.tooltipText = m.label + " : " + d.value + " " + m.units;
+        });
 
         // the value scale for this curve
         valueScale = d3.scale.linear()
@@ -265,7 +284,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr('width', w)
             .attr("height", h + frameHeight);
 
-        g.attr("clip-path", function(d,i) { return "url(#clip-" + index + ")"; });
+        g.attr("clip-path", function(d) { return "url(#clip-" + index + ")"; });
 
         // draggable group
         draggable = g.append("g")
@@ -322,6 +341,23 @@ function Curves(w, h, groupedMeasurements, className){
 
         labels.attr("opacity", 0.75);
 
+        // draggable rectangle in the background
+        draggable.append("rect")
+            .attr({
+                "x": 0,
+                "y": y - offset/2,
+                "height": h + frameHeight,
+                "fill": "white",
+                "opacity": 0,
+                "stroke": "none",
+                "class": "mask"
+            })
+            .attr("width", function(d){
+                return limitX;
+            });
+
+
+
         // lines for the curves connecting the dots
         draggable.append("g")
             .attr("class", "lines")
@@ -351,7 +387,7 @@ function Curves(w, h, groupedMeasurements, className){
         draggable.append("g")
             .attr("class", "measurements")
             .selectAll("circle")
-            .data(m.samples)
+            .data(samplesData)
             .enter()
             .append("circle")
             .attr("cx", function (d) {
@@ -367,27 +403,17 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "vector-effect": "non-scaling-stroke",
                 "stroke-width": 1,
-                "r": 5,
+                "r": circleMeasurementRadius,
                 "stroke": "grey"
+            })
+            .on("mouseover", function(d) {
+                d3.select(this).attr("r", circleMeasurementRadius * 1.75);
+                tip.show(d);
+            })
+            .on("mouseout", function(d) {
+                d3.select(this).attr("r", circleMeasurementRadius);
+                tip.hide(d);
             });
-
-
-        // draggable rectangle
-        draggable.append("rect")
-             .attr({
-                 "x": 0,
-                 "y": y - offset/2,
-                 "height": h + frameHeight,
-                 "fill": "white",
-                 "opacity": 0,
-                 "stroke": "none",
-                 "class": "mask"
-             })
-            .attr("width", function(d){
-                 return limitX;
-             });
-
-
 
         // Frame
         g.append("rect")
