@@ -96,32 +96,6 @@ function Curves(w, h, groupedMeasurements, className){
     }
 
     /**
-     *
-     * @param measurement
-     * @returns {Array}
-     */
-    function getLinePoints(measurement){
-        var points = [];
-        var samples = measurement.samples;
-        var sample1, sample2;
-        var linePoints;
-        for(var i = 0; i + 1 < samples.length; i ++){
-            sample1 = samples[i];
-            sample2 = samples[i + 1];
-            linePoints = {
-                timestamp1: sample1.timestamp,
-                timestamp2: sample2.timestamp,
-                value1: sample1.value,
-                value2: sample2.value
-            };
-            points.push(linePoints);
-        }
-
-        return points;
-    }
-
-
-    /**
      * Takes care of the dragging behavior.
      */
     var dx = 0;
@@ -168,19 +142,19 @@ function Curves(w, h, groupedMeasurements, className){
     var timeMin = minMax.min;
     var timeMax = minMax.max;
     var window = {
-        timestamp1: timeMin - (32 * 24 * 60 * 60),
-        timestamp2: timeMin + (32 * 24 * 60 * 60), // a month window
+        timestamp1: timeMin - (40 * 24 * 60 * 60),
+        timestamp2: timeMin + (40 * 24 * 60 * 60), // a month window
         x1: 0, // to be updated with the timeScale
         x2: 0
     };
-    var circleMeasurementRadius = 6;
+    var circleMeasurementRadius = 7;
     // time scale for the given window
     var timeScale = d3.scale.linear()
         .domain([window.timestamp1, window.timestamp2])
         .range([0, w]);
     window.x1 = timeScale(window.timestamp1);
     window.x2 = timeScale(window.timestamp2);
-    var limitX = timeScale(timeMax + (30 * 24 * 60 * 60));
+    var limitX = timeScale(timeMax + (40 * 24 * 60 * 60));
 
     /**
      * Create the Date objects for each month in between the measurements
@@ -223,12 +197,25 @@ function Curves(w, h, groupedMeasurements, className){
 
     svg.call(tip);
 
-
     /**
      * Start the container building
      */
+
     var container = svg.append("g").attr("class", "container");
     var m, valueScale, g, draggable, clip, labels, samplesData;
+
+    /**
+     * Using paths instead of lines
+     */
+    var lineFunction = d3.svg.line()
+        .x(function(d) {
+            return timeScale(d.timestamp);
+        })
+        .y(function(d) {
+            return y + h/2 + h/4 - valueScale(d.value);
+        })
+        .interpolate("cardinal");
+
     for(var index = 0; index < hMeasurements.length; index ++){
 
         // extract the measurement
@@ -360,30 +347,20 @@ function Curves(w, h, groupedMeasurements, className){
 
         // lines for the curves connecting the dots
         draggable.append("g")
-            .attr("class", "lines")
-            .selectAll("line")
-            .data(getLinePoints(m))
-            .enter()
-            .append("line")
-            .attr("x1", function(d){
-                return timeScale(d.timestamp1);
-            })
-            .attr("x2", function (d) {
-                return timeScale(d.timestamp2);
-            })
-            .attr("y1", function (d) {
-                return y + h/2 + h/4 - valueScale(d.value1);
-            })
-            .attr("y2", function (d) {
-                return y + h/2 + h/4 - valueScale(d.value2);
-            })
+            .attr("class", "path-line")
+            .append("path")
+            .attr("d", lineFunction(m.samples))
             .attr({
                 "vector-effect": "non-scaling-stroke",
-                "stroke-width": 1,
-                "stroke": "black"
+                "stroke-width": "1.75",
+                "stroke": "grey",
+                "fill": "none",
+                "shape-rendering": "optimizeQuality"
+                // "shape-rendering": "geometricPrecision"
             });
 
         // circles
+
         draggable.append("g")
             .attr("class", "measurements")
             .selectAll("circle")
@@ -407,7 +384,7 @@ function Curves(w, h, groupedMeasurements, className){
                 "stroke": "grey"
             })
             .on("mouseover", function(d) {
-                d3.select(this).attr("r", circleMeasurementRadius * 1.75);
+                d3.select(this).attr("r", circleMeasurementRadius * 2.15);
                 tip.show(d);
             })
             .on("mouseout", function(d) {
