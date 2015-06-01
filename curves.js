@@ -142,8 +142,8 @@ function Curves(w, h, groupedMeasurements, className){
     var timeMin = minMax.min;
     var timeMax = minMax.max;
     var window = {
-        timestamp1: timeMin - (40 * 24 * 60 * 60),
-        timestamp2: timeMin + (40 * 24 * 60 * 60), // a month window
+        timestamp1: timeMin - (32 * 24 * 60 * 60),
+        timestamp2: timeMin + (32 * 24 * 60 * 60), // a month window
         x1: 0, // to be updated with the timeScale
         x2: 0
     };
@@ -154,7 +154,7 @@ function Curves(w, h, groupedMeasurements, className){
         .range([0, w]);
     window.x1 = timeScale(window.timestamp1);
     window.x2 = timeScale(window.timestamp2);
-    var limitX = timeScale(timeMax + (40 * 24 * 60 * 60));
+    var limitX = timeScale(timeMax + (32 * 24 * 60 * 60));
 
     /**
      * Create the Date objects for each month in between the measurements
@@ -203,7 +203,8 @@ function Curves(w, h, groupedMeasurements, className){
 
     var container = svg.append("g").attr("class", "container");
     var m, valueScale, g, draggable, clip, labels, samplesData;
-
+    var minLabelGroup, minLabel, minLabelBox, minLabelBackground;
+    var maxLabelGroup, maxLabel, maxLabelBox, maxLabelBackground;
     /**
      * Using paths instead of lines
      */
@@ -214,7 +215,7 @@ function Curves(w, h, groupedMeasurements, className){
         .y(function(d) {
             return y + h/2 + h/4 - valueScale(d.value);
         })
-        .interpolate("cardinal");
+        .interpolate("monotone");
 
     for(var index = 0; index < hMeasurements.length; index ++){
 
@@ -261,7 +262,6 @@ function Curves(w, h, groupedMeasurements, className){
                 "opacity": 0.15,
                 "class": "wellness-zone"
             });
-
         // Clip
         clip = svg.append("clipPath")
             .attr("id", "clip-" + index)
@@ -391,6 +391,109 @@ function Curves(w, h, groupedMeasurements, className){
                 d3.select(this).attr("r", circleMeasurementRadius);
                 tip.hide(d);
             });
+
+        // try a min and max label
+        // min label
+        minLabelGroup = g.append("g").attr("class", "minLabelGroup");
+
+        minLabel = minLabelGroup.append("text")
+            .attr({
+                "x": 0,
+                "y": y + h,
+                "font-size": h * 0.3,
+                "fill": "white",
+                "text-anchor": "start"
+            })
+            .text(m.min + " " + m.units)
+            .each(function () {
+                // save the dimensions of the text
+                minLabelBox = this.getBBox();
+            });
+
+        // background of the min label
+
+        minLabelBackground = minLabelGroup.append("rect")
+            .attr({
+                "x": minLabelBox.x - 5,
+                "y": minLabelBox.y - 1,
+                "width": minLabelBox.width + 10,
+                "height": minLabelBox.height + 2,
+                // "stroke": "black",
+                // "stroke-width": 0.75,
+                // "vector-effect": "non-scaling-stroke"
+                "fill": "dimgrey"
+            });
+
+        minLabel.each(function () {
+            this.parentNode.appendChild(this);
+        });
+
+        minLabelGroup.attr("transform", function () {
+            var box = this.getBBox();
+            var x = Math.abs(box.x) + 3;
+            var y = 4;
+            return "translate(" + x + ", " + y + ")";
+        });
+
+        minLabelGroup.attr("opacity", 0.65);
+
+        // max label now
+        /*
+         g.append("text")
+         .attr({
+         "x": 0,
+         "y": y + h/4,
+         "font-size": h * 0.3,
+         "fill": "grey",
+         "text-anchor": "start"
+         })
+         .text(m.max + " " + m.units)
+         .each(function () {
+         maxLabelBox = this.getBBox();
+         });
+         */
+        maxLabelGroup = g.append("g").attr("class", "minLabelGroup");
+
+        maxLabel = maxLabelGroup.append("text")
+            .attr({
+                "x": 0,
+                "y": y + h/4,
+                "font-size": h * 0.3,
+                "fill": "white",
+                "text-anchor": "start"
+            })
+            .text(m.max + " " + m.units)
+            .each(function () {
+                // save the dimensions of the text
+                maxLabelBox = this.getBBox();
+            });
+
+        // background of the min label
+
+        maxLabelBackground = maxLabelGroup.append("rect")
+            .attr({
+                "x": maxLabelBox.x - 5,
+                "y": maxLabelBox.y - 1,
+                "width": maxLabelBox.width + 10,
+                "height": maxLabelBox.height + 2,
+                // "stroke": "black",
+                // "stroke-width": 0.75,
+                // "vector-effect": "non-scaling-stroke"
+                "fill": "dimgrey"
+            });
+
+        maxLabel.each(function () {
+            this.parentNode.appendChild(this);
+        });
+
+        maxLabelGroup.attr("transform", function () {
+            var box = this.getBBox();
+            var x = Math.abs(box.x) + 3;
+            var y = - 5;
+            return "translate(" + x + ", " + y + ")";
+        });
+
+        maxLabelGroup.attr("opacity", 0.65);
 
         // Frame
         g.append("rect")
