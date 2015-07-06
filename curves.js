@@ -101,6 +101,9 @@ function Curves(w, h, groupedMeasurements, className){
     var dx = 0;
     var drag = d3.behavior.drag()
         .on("drag", function(d, i) {
+
+            var cssClass = d3.select(this).attr("class");
+
             dx += d3.event.dx; // add the movement in x
             // negative means we move it to the future
             // positive we mov it to the past
@@ -117,7 +120,27 @@ function Curves(w, h, groupedMeasurements, className){
             container.selectAll("g.draggable")
                 .attr("transform", function(d, i){
                     return "translate(" + dx + ", 0)";
+                });
+            // try to move the custom line
+            container.selectAll("g.custom-line")
+                .attr("transform", function(d, i){
+                    return "translate(" + dx + ", 0)";
+                });
+        });
+
+
+    var dragCustomLine = d3.behavior.drag()
+        .on("drag", function (d, i) {
+
+            var lineClass = d3.select(this).attr("class");
+
+            container.selectAll("g.custom-line line." + lineClass)
+                .attr("x1", function(d){
+                    return d.x += d3.event.dx;
                 })
+                .attr("x2", function(d){
+                    return d.x;
+                });
         });
 
     /**
@@ -134,8 +157,8 @@ function Curves(w, h, groupedMeasurements, className){
 
 
 
-    var frameHeight = h * 2;
-    var offset = frameHeight + 5;
+    var frameHeight = h;
+    var offset = frameHeight;
     var y = h;
     var hMeasurements = getMeasurements(groupedMeasurements);
     var minMax = getMinMax(hMeasurements);
@@ -242,7 +265,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "x": 5,
                 "y": y - offset/2,
-                "font-size": h * 0.45,
+                "font-size": h * 0.3,
                 "fill": "grey"
             })
             .text(m.label)
@@ -280,10 +303,11 @@ function Curves(w, h, groupedMeasurements, className){
                 "x": 0
             }]);
 
-        // labels
+        // labels for the dates at the bottom
+        // group containing the labels
         labels = draggable.append("g")
             .attr("class", "labels");
-
+        // add the vertical line marking the division of the dates
         labels.selectAll("line")
             .data(tsMonths)
             .enter()
@@ -298,52 +322,40 @@ function Curves(w, h, groupedMeasurements, className){
                 return y - h;
             })
             .attr("y2", function (d) {
-                return y + h * 1.4;
+                return ( index % 3 === 0 && index > 0 ) ? y + h * 1.2: y + h + frameHeight;
             })
             .attr({
                 "stroke-width": 0.75,
                 "stroke": "grey",
                 "vector-effect": "non-scaling-stroke"
             });
+        // append the text of the actual date in a given format: month year
+        // not to every measurement
+        if( index % 3 === 0 && index > 0 ){
 
-        labels.selectAll("text")
-            .data(tsMonths)
-            .enter()
-            .append("text")
-            .attr("x", function (d) {
-                return timeScale(d.ts);
-            })
-            .attr({
-                "y": y + h * 1.4,
-                "font-size": h * 0.4,
-                "fill": "grey"
-            })
-            .text(function (d) {
-                return d.month + " " + d.year;
-            })
-            .attr("transform", function (d) {
+            labels.selectAll("text")
+                .data(tsMonths)
+                .enter()
+                .append("text")
+                .attr("x", function (d) {
+                    return timeScale(d.ts);
+                })
+                .attr({
+                    "y": y + h * 1.4,
+                    "font-size": h * 0.25,
+                    "fill": "grey"
+                })
+                .text(function (d) {
+                    return d.month + " " + d.year;
+                })
+                .attr("transform", function (d) {
+                    // center the text
+                    return "translate(" + (-this.getBBox().width/2) + ", " + (this.getBBox().height * 0.2) + ")";
+                });
 
-                return "translate(" + (-this.getBBox().width/2) + ", " + (this.getBBox().height) + ")";
-            });
+        }
 
         labels.attr("opacity", 0.75);
-
-        // draggable rectangle in the background
-        draggable.append("rect")
-            .attr({
-                "x": 0,
-                "y": y - offset/2,
-                "height": h + frameHeight,
-                "fill": "white",
-                "opacity": 0,
-                "stroke": "none",
-                "class": "mask"
-            })
-            .attr("width", function(d){
-                return limitX;
-            });
-
-
 
         // lines for the curves connecting the dots
         draggable.append("g")
@@ -360,7 +372,6 @@ function Curves(w, h, groupedMeasurements, className){
             });
 
         // circles
-
         draggable.append("g")
             .attr("class", "measurements")
             .selectAll("circle")
@@ -392,6 +403,51 @@ function Curves(w, h, groupedMeasurements, className){
                 tip.hide(d);
             });
 
+        // we need a new rectangle in the background to drag all the elements no matter where we click
+        // in fact this is the one we listen to although we move all the draggable groups
+        g.append("g")
+            .attr("class", "actionable")
+            .append("rect")
+            .attr({
+                "x": 0,
+                "y": y - offset/2,
+                "height": h + frameHeight,
+                "width": w,
+                "fill": "grey",
+                "opacity": 0,
+                "stroke": "none"
+            });
+
+
+        // here is the right spot to insert the line indicating the displayed measurements
+
+        g.append("g")
+            .attr("class", "custom-line")
+            .selectAll("line")
+            .data([ { x: 50 }, {x: 100} ])
+            .enter()
+            .append("line")
+            .attr({
+                "x1": function (d) {
+                    return d.x;
+                },
+                "x2": function (d) {
+                    return d.x;
+                },
+                y1: y - offset/2,
+                y2: y - offset/2 + h + frameHeight,
+                "stroke": "blue",
+                "stroke-width": 8,
+                opacity: 0.25
+            })
+            .attr("stroke-dasharray", function (d, i) {
+                return i % 2 === 0 ? "none": "6 0.5";
+            })
+            .attr("class", function (d, i) {
+                return i % 2 === 0 ? "custom-line-a": "custom-line-b";
+            })
+            .call(dragCustomLine);
+
         // try a min and max label
         // min label
         minLabelGroup = g.append("g").attr("class", "minLabelGroup");
@@ -400,7 +456,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "x": 0,
                 "y": y + h,
-                "font-size": h * 0.3,
+                "font-size": h * 0.25,
                 "fill": "white",
                 "text-anchor": "start"
             })
@@ -431,7 +487,7 @@ function Curves(w, h, groupedMeasurements, className){
         minLabelGroup.attr("transform", function () {
             var box = this.getBBox();
             var x = Math.abs(box.x) + 3;
-            var y = 4;
+            var y = 0;
             return "translate(" + x + ", " + y + ")";
         });
 
@@ -458,7 +514,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr({
                 "x": 0,
                 "y": y + h/4,
-                "font-size": h * 0.3,
+                "font-size": h * 0.25,
                 "fill": "white",
                 "text-anchor": "start"
             })
@@ -489,13 +545,13 @@ function Curves(w, h, groupedMeasurements, className){
         maxLabelGroup.attr("transform", function () {
             var box = this.getBBox();
             var x = Math.abs(box.x) + 3;
-            var y = - 5;
+            var y = - box.height * 0.2;
             return "translate(" + x + ", " + y + ")";
         });
 
         maxLabelGroup.attr("opacity", 0.65);
 
-        // Frame
+        // A border around the window
         g.append("rect")
             .attr({
                 "x": 0,
@@ -504,18 +560,19 @@ function Curves(w, h, groupedMeasurements, className){
                 "width": w,
                 "fill": "none",
                 "stroke": "grey",
-                "stroke-width": 1.25,
+                "stroke-width": 0.75,
                 "vector-effect": "non-scaling-stroke",
-                "class": "frame"
+                "class": "frame",
+                "opacity": 0.5
             });
+
         // update the offset
         y += h + offset;
     }
 
+    container.attr("transform", "translate(" + 2.5 + ", " + 2.5 + ")");
 
-
-    var translate = "translate(" + 5 + ", " + 5 + ")";
-    container.attr("transform", translate)
+    svg.selectAll("g.actionable")
         .call(drag);
 
     svg.attr("height", y + 5);
