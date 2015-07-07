@@ -176,6 +176,21 @@ function Curves(w, h, groupedMeasurements, className){
         return getLatestSample(samples);
     }
 
+    function getEarliestTimestampWithAllSamples(measurements){
+        var samples = [];
+        var latestStartingSample = {
+            timestamp: 0
+        };
+        var earliestSample;
+        for(var i = 0; i < measurements.length; i ++){
+            samples = measurements[i].samples;
+            earliestSample = getEarliestSample(samples);
+            if(earliestSample.timestamp > latestStartingSample.timestamp)
+                latestStartingSample = earliestSample;
+        }
+        return latestStartingSample;
+    }
+
     /**
      * Begin the factory!
      */
@@ -192,6 +207,8 @@ function Curves(w, h, groupedMeasurements, className){
     var offset = frameHeight;
     var y = h;
     var hMeasurements = getMeasurements(groupedMeasurements);
+
+    var latestStartingSample = getEarliestTimestampWithAllSamples(hMeasurements);
 
     var timeMin = getEarliestSampleFromMeasurements(hMeasurements).timestamp;
     var timeMax = getLatestSampleFromMeasurements(hMeasurements).timestamp;
@@ -469,7 +486,7 @@ function Curves(w, h, groupedMeasurements, className){
             .attr("class", "custom-line")
             .selectAll("line")
             .data([ {
-                x: timestampToPixelScale(timeMin)
+                x: timestampToPixelScale(latestStartingSample.timestamp)
             }, {
                 x: timestampToPixelScale(timeMax)
             } ])
