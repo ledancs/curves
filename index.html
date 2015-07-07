@@ -38,15 +38,16 @@
 </head>
 <body>
 
+<div class="curves-container"></div>
 
 <script src="curves.js" type="application/javascript"></script>
 <script src="d3.tip.v0.6.3.js" type="application/javascript"></script>
 <script type="text/javascript">
-    var w = 700,
+    var w = 800,
             h = 45;
     var className = "curves-container";
     // create an instance of the curves
-    var c = new Curves(w, h, groups, className);
+    var c = Curves(w, h, groups, className);
 
 </script>
 

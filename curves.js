@@ -2,7 +2,6 @@
  * Created by ledesmaf on 22.5.2015.
  */
 
-
 function Curves(w, h, groupedMeasurements, className){
 
     /**
@@ -128,12 +127,11 @@ function Curves(w, h, groupedMeasurements, className){
                 });
         });
 
-
     var dragCustomLine = d3.behavior.drag()
         .on("drag", function (d, i) {
 
             var lineClass = d3.select(this).attr("class");
-
+            // get all the lines of each measurement with the same CSS class
             container.selectAll("g.custom-line line." + lineClass)
                 .attr("x1", function(d){
                     return d.x += d3.event.dx;
@@ -143,13 +141,52 @@ function Curves(w, h, groupedMeasurements, className){
                 });
         });
 
+    function moveCustomLine(container, lineClass, timestamp){
+        container.selectAll("g.custom-line line." + lineClass)
+            .attr("x1", function(d){
+                return d.x = timestampToPixelScale(timestamp);
+            })
+            .attr("x2", function(d){
+                return d.x;
+            });
+    }
+
+    /**
+     * For exceptionally high or low values we set a limit
+     * @param y
+     * @param h
+     * @param value
+     * @returns {number}
+     */
+    function getYValue(y, h, value){
+
+        var adjustedValue = Math.min(y + h/2 + h/4 - value, y + h + h/4);
+
+        adjustedValue = Math.max(adjustedValue, y + h/16);
+
+        return adjustedValue;
+
+    }
+
+    function getEarliestSample(samples){
+        samples.sort(function(a, b){
+            return a.timestamp - b.timestamp;
+        });
+        return samples[0];
+    }
+
+    function getLatestSample(samples){
+        samples.sort(function(a, b){
+            return b.timestamp - a.timestamp;
+        });
+        return samples[0];
+    }
+
     /**
      * Begin the factory!
      */
 
-    var div = d3.select("body")
-        .append("div")
-        .attr("class", className);
+    var div = d3.select("div." + className);
 
     var svg = div.append("svg")
         .attr("width", w + 5)
@@ -167,17 +204,27 @@ function Curves(w, h, groupedMeasurements, className){
     var window = {
         timestamp1: timeMin - (32 * 24 * 60 * 60),
         timestamp2: timeMin + (32 * 24 * 60 * 60), // a month window
-        x1: 0, // to be updated with the timeScale
+        x1: 0, // to be updated with the timestampToPixelScale
         x2: 0
     };
+    var customLineAName = "custom-line-a";
+    var customLineBName = "custom-line-b";
+
     var circleMeasurementRadius = 7;
-    // time scale for the given window
-    var timeScale = d3.scale.linear()
+
+    // convert from a timestamp to the coordinates of the whole width of the window
+    var timestampToPixelScale = d3.scale.linear()
         .domain([window.timestamp1, window.timestamp2])
         .range([0, w]);
-    window.x1 = timeScale(window.timestamp1);
-    window.x2 = timeScale(window.timestamp2);
-    var limitX = timeScale(timeMax + (32 * 24 * 60 * 60));
+
+    // convert from coordinates of the window to a timestamp
+    var pixelToTimestampScale = d3.scale.linear()
+        .domain([0, w])
+        .range([window.timestamp1, window.timestamp2]);
+
+    window.x1 = timestampToPixelScale(window.timestamp1);
+    window.x2 = timestampToPixelScale(window.timestamp2);
+    var limitX = timestampToPixelScale(timeMax + (32 * 24 * 60 * 60));
 
     /**
      * Create the Date objects for each month in between the measurements
@@ -233,10 +280,10 @@ function Curves(w, h, groupedMeasurements, className){
      */
     var lineFunction = d3.svg.line()
         .x(function(d) {
-            return timeScale(d.timestamp);
+            return timestampToPixelScale(d.timestamp);
         })
         .y(function(d) {
-            return y + h/2 + h/4 - valueScale(d.value);
+            return getYValue(y, h, valueScale(d.value));
         })
         .interpolate("monotone");
 
@@ -285,6 +332,7 @@ function Curves(w, h, groupedMeasurements, className){
                 "opacity": 0.15,
                 "class": "wellness-zone"
             });
+
         // Clip
         clip = svg.append("clipPath")
             .attr("id", "clip-" + index)
@@ -295,6 +343,21 @@ function Curves(w, h, groupedMeasurements, className){
             .attr("height", h + frameHeight);
 
         g.attr("clip-path", function(d) { return "url(#clip-" + index + ")"; });
+
+        // we need a new rectangle in the background to drag all the elements no matter where we click
+        // in fact this is the one we listen to although we move all the draggable groups
+        g.append("g")
+            .attr("class", "actionable")
+            .append("rect")
+            .attr({
+                "x": 0,
+                "y": y - offset/2,
+                "height": h + frameHeight,
+                "width": w,
+                "fill": "grey",
+                "opacity": 0,
+                "stroke": "none"
+            });
 
         // draggable group
         draggable = g.append("g")
@@ -313,10 +376,10 @@ function Curves(w, h, groupedMeasurements, className){
             .enter()
             .append("line")
             .attr("x1", function(d){
-                return timeScale(d.ts);
+                return timestampToPixelScale(d.ts);
             })
             .attr("x2", function (d) {
-                return timeScale(d.ts);
+                return timestampToPixelScale(d.ts);
             })
             .attr("y1", function (d) {
                 return y - h;
@@ -338,7 +401,7 @@ function Curves(w, h, groupedMeasurements, className){
                 .enter()
                 .append("text")
                 .attr("x", function (d) {
-                    return timeScale(d.ts);
+                    return timestampToPixelScale(d.ts);
                 })
                 .attr({
                     "y": y + h * 1.4,
@@ -379,10 +442,10 @@ function Curves(w, h, groupedMeasurements, className){
             .enter()
             .append("circle")
             .attr("cx", function (d) {
-                return timeScale(d.timestamp);
+                return timestampToPixelScale(d.timestamp);
             })
             .attr("cy", function(d){
-                return y + h/2 + h/4 - valueScale(d.value);
+                return getYValue(y, h, valueScale(d.value));
             })
             .attr("fill", function (d) {
                 // clever function comes here
@@ -403,20 +466,7 @@ function Curves(w, h, groupedMeasurements, className){
                 tip.hide(d);
             });
 
-        // we need a new rectangle in the background to drag all the elements no matter where we click
-        // in fact this is the one we listen to although we move all the draggable groups
-        g.append("g")
-            .attr("class", "actionable")
-            .append("rect")
-            .attr({
-                "x": 0,
-                "y": y - offset/2,
-                "height": h + frameHeight,
-                "width": w,
-                "fill": "grey",
-                "opacity": 0,
-                "stroke": "none"
-            });
+
 
 
         // here is the right spot to insert the line indicating the displayed measurements
@@ -424,7 +474,11 @@ function Curves(w, h, groupedMeasurements, className){
         g.append("g")
             .attr("class", "custom-line")
             .selectAll("line")
-            .data([ { x: 50 }, {x: 100} ])
+            .data([ {
+                x: timestampToPixelScale(getEarliestSample(m.samples).timestamp)
+            }, {
+                x: timestampToPixelScale(getLatestSample(m.samples).timestamp)
+            } ])
             .enter()
             .append("line")
             .attr({
@@ -437,14 +491,14 @@ function Curves(w, h, groupedMeasurements, className){
                 y1: y - offset/2,
                 y2: y - offset/2 + h + frameHeight,
                 "stroke": "blue",
-                "stroke-width": 8,
+                "stroke-width": 6,
                 opacity: 0.25
             })
             .attr("stroke-dasharray", function (d, i) {
-                return i % 2 === 0 ? "none": "6 0.5";
+                return i % 2 === 0 ? "none": "5 1";
             })
             .attr("class", function (d, i) {
-                return i % 2 === 0 ? "custom-line-a": "custom-line-b";
+                return i % 2 === 0 ? customLineAName: customLineBName;
             })
             .call(dragCustomLine);
 
@@ -576,4 +630,15 @@ function Curves(w, h, groupedMeasurements, className){
         .call(drag);
 
     svg.attr("height", y + 5);
+
+    return {
+        svg: svg,
+        container: container,
+        moveCustomLineA: function(timestamp){
+            moveCustomLine(container, customLineAName, timestamp);
+        },
+        moveCustomLineB: function(timestamp){
+            moveCustomLine(container, customLineBName, timestamp);
+        }
+    };
 }
