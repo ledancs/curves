@@ -25,34 +25,6 @@ function Curves(w, h, groupedMeasurements, className){
 
     /**
      *
-     * @param measurements
-     * @returns {{min: number, max: number}}
-     */
-    function getMinMax(measurements){
-        var measurement, samples, sample, timestamp;
-        var timestamps = [];
-        for(var i = 0; i < measurements.length; i ++){
-            measurement = measurements[i];
-            samples = measurement.samples;
-            for(var j = 0; j < samples.length; j ++){
-                sample = samples[j];
-                timestamp = sample.timestamp;
-                if(timestamps.indexOf(timestamp) < 0) // only add unique elements
-                    timestamps.push(timestamp);
-            }
-        }
-
-        var min = Math.min.apply(null, timestamps);
-        var max = Math.max.apply(null, timestamps);
-
-        return {
-            min: min,
-            max: max
-        };
-    }
-
-    /**
-     *
      * @param measurement
      * @param value
      * @returns {string}
@@ -168,18 +140,40 @@ function Curves(w, h, groupedMeasurements, className){
 
     }
 
+    function sortAscByTimestamp(a, b){
+        return a.timestamp - b.timestamp;
+    }
+
+    function sortDesByTimestamp(a, b){
+        return b.timestamp - a.timestamp;
+    }
+
+    function getAllSamples(measurements){
+        var allSamples = [];
+        for(var i = 0; i < measurements.length; i ++){
+            allSamples = allSamples.concat(measurements[i].samples);
+        }
+        return allSamples;
+    }
+
     function getEarliestSample(samples){
-        samples.sort(function(a, b){
-            return a.timestamp - b.timestamp;
-        });
+        samples.sort(sortAscByTimestamp);
         return samples[0];
     }
 
     function getLatestSample(samples){
-        samples.sort(function(a, b){
-            return b.timestamp - a.timestamp;
-        });
+        samples.sort(sortDesByTimestamp);
         return samples[0];
+    }
+
+    function getEarliestSampleFromMeasurements(measurements){
+        var samples = getAllSamples(measurements);
+        return getEarliestSample(samples);
+    }
+
+    function getLatestSampleFromMeasurements(measurements){
+        var samples = getAllSamples(measurements);
+        return getLatestSample(samples);
     }
 
     /**
@@ -198,9 +192,9 @@ function Curves(w, h, groupedMeasurements, className){
     var offset = frameHeight;
     var y = h;
     var hMeasurements = getMeasurements(groupedMeasurements);
-    var minMax = getMinMax(hMeasurements);
-    var timeMin = minMax.min;
-    var timeMax = minMax.max;
+
+    var timeMin = getEarliestSampleFromMeasurements(hMeasurements).timestamp;
+    var timeMax = getLatestSampleFromMeasurements(hMeasurements).timestamp;
     var window = {
         timestamp1: timeMin - (32 * 24 * 60 * 60),
         timestamp2: timeMin + (32 * 24 * 60 * 60), // a month window
@@ -475,9 +469,9 @@ function Curves(w, h, groupedMeasurements, className){
             .attr("class", "custom-line")
             .selectAll("line")
             .data([ {
-                x: timestampToPixelScale(getEarliestSample(m.samples).timestamp)
+                x: timestampToPixelScale(timeMin)
             }, {
-                x: timestampToPixelScale(getLatestSample(m.samples).timestamp)
+                x: timestampToPixelScale(timeMax)
             } ])
             .enter()
             .append("line")
