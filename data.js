@@ -20,6 +20,10 @@ var groups = [
                     {
                         timestamp: 1423742720,
                         value: 128
+                    },
+                    {
+                        timestamp: 1425742720,
+                        value: 127
                     }
                 ]
             },
@@ -40,6 +44,10 @@ var groups = [
                     {
                         timestamp: 1423742720,
                         value: 86
+                    },
+                    {
+                        timestamp: 1425742720,
+                        value: 85
                     }
                 ]
             }
@@ -59,11 +67,11 @@ var groups = [
                 label: "Body Mass Index",
                 samples: [
                     {
-                        timestamp: 1420798224,
+                        timestamp: 1419798224,
                         value: 25
                     },
                     {
-                        timestamp: 1423742720,
+                        timestamp: 1424742720,
                         value: 24.5
                     }
                 ]
@@ -208,9 +216,37 @@ var groups = [
                         value: 6.5
                     },
                     {
-                        timestamp: 1423742720,
+                        timestamp: 1420942720,
+                        value: 6.6
+                    },
+                    {
+                        timestamp: 1421042720,
+                        value: 6.7
+                    },
+                    {
+                        timestamp: 1421152720,
+                        value: 6.8
+                    },
+                    {
+                        timestamp: 1422152720,
+                        value: 6.6
+                    },
+                    {
+                        timestamp: 1422542720,
                         value: 7.5
-                    }
+                    },
+                    {
+                        timestamp: 1422652720,
+                        value: 6.9
+                    },
+                    {
+                        timestamp: 1422752720,
+                        value: 7.1
+                    },
+                    {
+                        timestamp: 1423152720,
+                        value: 7.2
+                    },
                 ]
             },
             {
